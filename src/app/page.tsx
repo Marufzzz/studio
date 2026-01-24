@@ -19,11 +19,14 @@ const getCurrentDataKey = () => {
   return `trackit-data-${year}-${month}`;
 };
 
+const initialExpenses: Expense[] = [];
+const initialLoans: Loan[] = [];
+
 export default function DashboardPage() {
-  const dataKey = getCurrentDataKey();
+  const dataKey = React.useMemo(getCurrentDataKey, []);
   const [monthlyIncome, setMonthlyIncome] = useLocalStorage<number | null>(`${dataKey}-income`, null);
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>(`${dataKey}-expenses`, []);
-  const [loans, setLoans] = useLocalStorage<Loan[]>(`${dataKey}-loans`, []);
+  const [expenses, setExpenses] = useLocalStorage<Expense[]>(`${dataKey}-expenses`, initialExpenses);
+  const [loans, setLoans] = useLocalStorage<Loan[]>(`${dataKey}-loans`, initialLoans);
   const [analysis, setAnalysis] = useLocalStorage<AnalysisResult | null>(`${dataKey}-analysis`, null);
   
   const [isCategorizing, setIsCategorizing] = React.useState(false);
@@ -114,8 +117,8 @@ export default function DashboardPage() {
   };
   
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalLoanGiven = loans.filter(l => l.type === 'given').reduce((acc, curr) => acc + curr.amount, 0);
-  const totalLoanTaken = loans.filter(l => l.type === 'taken').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalLoanGiven = loans.filter(l => l.type === 'given loan').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalLoanTaken = loans.filter(l => l.type === 'taken loan').reduce((acc, curr) => acc + curr.amount, 0);
   const savings = monthlyIncome ? monthlyIncome - totalExpenses : null;
 
   return (
