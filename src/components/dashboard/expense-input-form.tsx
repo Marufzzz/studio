@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Loader2, Mic, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -89,10 +89,22 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
       <CardHeader>
         <CardTitle>Add New Transaction</CardTitle>
         <CardDescription>
-          Enter your expense in Bengali (e.g., "চা বিস্কুট ২০ টাকা") or use voice input.
+          Use voice input or enter your expense below (e.g., "চা বিস্কুট ২০ টাকা").
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex justify-center mb-4">
+            <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={handleVoiceInput}
+                className={cn("w-24 h-24 rounded-full border-4", isListening && "text-destructive border-destructive animate-pulse")}
+            >
+                <Mic className="h-10 w-10" />
+                <span className="sr-only">Use Voice</span>
+            </Button>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
             <FormField
@@ -101,19 +113,7 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
               render={({ field }) => (
                 <FormItem className="flex-1">
                   <FormControl>
-                    <div className="relative">
-                      <Input placeholder='e.g., " রাতের খাবার ৩০০ টাকা"' {...field} />
-                       <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={handleVoiceInput}
-                        className={cn("absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8", isListening && "text-destructive")}
-                      >
-                        <Mic className="h-4 w-4" />
-                        <span className="sr-only">Use Voice</span>
-                      </Button>
-                    </div>
+                    <Input placeholder='e.g., " রাতের খাবার ৩০০ টাকা"' {...field} />
                   </FormControl>
                   <FormMessage className="mt-2" />
                 </FormItem>
