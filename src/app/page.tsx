@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import type { Expense, Loan } from '@/lib/types';
+import type { Expense } from '@/lib/types';
 import { SummaryCards } from '@/components/dashboard/summary-cards';
 import { IncomeModal } from '@/components/dashboard/income-modal';
 import { PiggyBank } from 'lucide-react';
@@ -19,7 +19,6 @@ export default function HomePage() {
   const dataKey = React.useMemo(getCurrentDataKey, []);
   const [monthlyIncome, setMonthlyIncome] = useLocalStorage<number | null>(`${dataKey}-income`, null);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>(`${dataKey}-expenses`, []);
-  const [loans, setLoans] = useLocalStorage<Loan[]>(`${dataKey}-loans`, []);
 
   const [isMounted, setIsMounted] = React.useState(false);
   React.useEffect(() => {
@@ -27,8 +26,6 @@ export default function HomePage() {
   }, []);
 
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalLoanGiven = loans.filter(l => l.type === 'given').reduce((acc, curr) => acc + curr.amount, 0);
-  const totalLoanTaken = loans.filter(l => l.type === 'taken').reduce((acc, curr) => acc + curr.amount, 0);
   const savings = monthlyIncome ? monthlyIncome - totalExpenses : null;
 
   if (!isMounted) {
@@ -51,9 +48,7 @@ export default function HomePage() {
         <SummaryCards
           income={monthlyIncome}
           expenses={totalExpenses}
-          savings={savings}
-          loanGiven={totalLoanGiven}
-          loanTaken={totalLoanTaken}
+          balance={savings}
         />
         <CategorizedExpenses expenses={expenses} />
       </main>

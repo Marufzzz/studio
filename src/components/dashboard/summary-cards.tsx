@@ -1,16 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Landmark, ArrowUpCircle, ArrowDownCircle, Wallet, Handshake } from 'lucide-react';
+import { Landmark, ArrowDownCircle, Wallet } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface SummaryCardsProps {
   income: number | null;
   expenses: number;
-  savings: number | null;
-  loanGiven: number;
-  loanTaken: number;
+  balance: number | null;
 }
 
-export function SummaryCards({ income, expenses, savings, loanGiven, loanTaken }: SummaryCardsProps) {
+export function SummaryCards({ income, expenses, balance }: SummaryCardsProps) {
   const summaryData = [
     {
       title: 'Monthly Income',
@@ -23,24 +21,14 @@ export function SummaryCards({ income, expenses, savings, loanGiven, loanTaken }
       icon: ArrowDownCircle,
     },
     {
-      title: 'Savings',
-      value: formatCurrency(savings),
+      title: 'Current Balance',
+      value: formatCurrency(balance),
       icon: Wallet,
-    },
-    {
-      title: 'Loan Given',
-      value: formatCurrency(loanGiven),
-      icon: ArrowUpCircle,
-    },
-    {
-      title: 'Loan Taken',
-      value: formatCurrency(loanTaken),
-      icon: Handshake,
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-3">
       {summaryData.map((item, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
