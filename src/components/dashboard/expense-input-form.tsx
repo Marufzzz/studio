@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Loader2, Mic, Plus } from 'lucide-react';
+import { Loader2, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +32,11 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
       expenseText: '',
     },
   });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    await onAddExpense(values.expenseText);
+    form.reset();
+  }
 
   const handleVoiceInput = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -58,6 +63,7 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
           form.setValue('expenseText', transcript);
+          onSubmit({ expenseText: transcript });
         };
         
         recognition.onerror = (event) => {
@@ -79,17 +85,12 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
     }
   };
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    await onAddExpense(values.expenseText);
-    form.reset();
-  }
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Add New Transaction</CardTitle>
         <CardDescription>
-          Use voice input or enter your expense below (e.g., "চা বিস্কুট ২০ টাকা").
+          Use voice input or enter your expense below and press Enter (e.g., "চা বিস্কুট ২০ টাকা").
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -99,10 +100,14 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
                 size="icon"
                 variant="outline"
                 onClick={handleVoiceInput}
-                className={cn("w-24 h-24 rounded-full border-4", isListening && "text-destructive border-destructive animate-pulse")}
+                disabled={isProcessing}
+                className={cn(
+                  "w-24 h-24 rounded-full border-4", 
+                  isListening && !isProcessing && "text-destructive border-destructive animate-pulse"
+                )}
             >
-                <Mic className="h-10 w-10" />
-                <span className="sr-only">Use Voice</span>
+              {isProcessing ? <Loader2 className="h-10 w-10 animate-spin" /> : <Mic className="h-10 w-10" />}
+              <span className="sr-only">Use Voice</span>
             </Button>
         </div>
         <Form {...form}>
@@ -113,20 +118,12 @@ export function ExpenseInputForm({ onAddExpense, isProcessing }: ExpenseInputFor
               render={({ field }) => (
                 <FormItem className="flex-1">
                   <FormControl>
-                    <Input placeholder='e.g., " রাতের খাবার ৩০০ টাকা"' {...field} />
+                    <Input placeholder='e.g., " রাতের খাবার ৩০০ টাকা"' {...field} disabled={isProcessing} />
                   </FormControl>
                   <FormMessage className="mt-2" />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isProcessing}>
-              {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-              <span className="sr-only sm:not-sr-only sm:ml-2">Add</span>
-            </Button>
           </form>
         </Form>
       </CardContent>
