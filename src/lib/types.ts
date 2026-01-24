@@ -7,10 +7,10 @@ export interface Expense {
 }
 
 export interface Loan {
-  id: string;
-  description: string;
+  id:string;
+  name: string;
   amount: number;
-  type: 'given loan' | 'taken loan';
+  type: 'given' | 'taken';
   date: string;
 }
 

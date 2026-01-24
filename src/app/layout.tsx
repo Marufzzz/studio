@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
+import { BottomNav } from '@/components/layout/bottom-nav';
 
 export const metadata: Metadata = {
   title: 'Trackit Finance',
@@ -21,7 +22,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("font-body antialiased", "min-h-screen bg-background font-sans")}>
-        {children}
+        <div className="flex flex-col min-h-screen">
+          <main className="flex-1 pb-24">{children}</main>
+          <BottomNav />
+        </div>
         <Toaster />
       </body>
     </html>

@@ -21,11 +21,12 @@ const CategorizeBengaliExpensesOutputSchema = z.object({
   category: z
     .string()
     .describe(
-      'The predicted category of the expense, e.g., food, transportation, rent, given loan, taken loan, etc.'
+      'The predicted category of the expense. Must be one of: food, beverage, snacks, transportation, rent, utilities, shopping, entertainment, health, education, gift, given loan, taken loan, other.'
     ),
   confidence: z
     .number()
     .describe('The confidence level of the category prediction (0-1).'),
+  personName: z.string().optional().describe("If the category is 'given loan' or 'taken loan', this is the name of the person involved."),
 });
 export type CategorizeBengaliExpensesOutput = z.infer<typeof CategorizeBengaliExpensesOutputSchema>;
 
@@ -39,15 +40,18 @@ const prompt = ai.definePrompt({
   name: 'categorizeBengaliExpensesPrompt',
   input: {schema: CategorizeBengaliExpensesInputSchema},
   output: {schema: CategorizeBengaliExpensesOutputSchema},
-  prompt: `You are an expert financial advisor specializing in categorizing expenses.
+  prompt: `You are an expert financial advisor specializing in categorizing expenses from Bengali text.
 
-You will categorize the expense text provided by the user into one of the following categories: food, transportation, rent, given loan, taken loan, other.
+You will categorize the expense text provided by the user into one of the following categories: food, beverage, snacks, transportation, rent, utilities, shopping, entertainment, health, education, gift, given loan, taken loan, other.
+
+If the expense is a loan (given or taken), you MUST extract the name of the person involved and put it in the 'personName' field. For example, "রহিমকে ৫০০ টাকা ধার দিলাম" (Gave 500 taka loan to Rahim) should result in personName: "রহিম". If no person is mentioned for a loan, use "Unknown".
 
 Expense Text (Bengali): {{{expenseText}}}
 
-Consider common expenses in Bangladesh when categorizing. Respond in English with the category and a confidence level (0-1). The category should be in English.
+Consider common expenses in Bangladesh when categorizing. For example: 'চা' -> beverage, 'সিগারেট' -> other, 'চানাচুর' -> snacks.
+Respond in English with the category, a confidence level (0-1), and the person's name if it's a loan. The category should be in English.
 
-Output format: { \"category\": \"<category>\", \"confidence\": <confidence> }`,
+Output format: { "category": "<category>", "confidence": <confidence>, "personName": "<name>" }`,
 });
 
 const categorizeBengaliExpensesFlow = ai.defineFlow(
