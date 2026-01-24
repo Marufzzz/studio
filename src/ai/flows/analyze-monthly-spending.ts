@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Analyzes monthly spending against income and provides personalized insights and suggestions.
+ * @fileOverview Analyzes monthly spending against income and provides personalized insights and suggestions in Bengali.
  *
  * - analyzeMonthlySpending - A function that analyzes the monthly spending.
  * - AnalyzeMonthlySpendingInput - The input type for the analyzeMonthlySpending function.
@@ -21,9 +21,9 @@ const AnalyzeMonthlySpendingInputSchema = z.object({
 export type AnalyzeMonthlySpendingInput = z.infer<typeof AnalyzeMonthlySpendingInputSchema>;
 
 const AnalyzeMonthlySpendingOutputSchema = z.object({
-  summary: z.string().describe('A summary of the user\'s financial situation.'),
-  insights: z.array(z.string()).describe('Key insights into the user\'s spending habits.'),
-  suggestions: z.array(z.string()).describe('Personalized suggestions for improving financial habits.'),
+  summary: z.string().describe('A summary of the user\'s financial situation, in Bengali.'),
+  insights: z.array(z.string()).describe('Key insights into the user\'s spending habits, in Bengali.'),
+  suggestions: z.array(z.string()).describe('Personalized suggestions for improving financial habits, in Bengali.'),
 });
 export type AnalyzeMonthlySpendingOutput = z.infer<typeof AnalyzeMonthlySpendingOutputSchema>;
 
@@ -35,18 +35,26 @@ const prompt = ai.definePrompt({
   name: 'analyzeMonthlySpendingPrompt',
   input: {schema: AnalyzeMonthlySpendingInputSchema},
   output: {schema: AnalyzeMonthlySpendingOutputSchema},
-  prompt: `You are a personal finance advisor. Analyze the user's monthly spending and provide insights and suggestions.
+  prompt: `You are a personal finance advisor from Bangladesh. Your role is to analyze financial data and provide personalized advice in Bengali. Address the user directly using 'আপনি' (you).
 
-  Monthly Income: BDT {{{monthlyIncome}}}
-  Total Expenses: BDT {{{totalExpenses}}}
-  Expense Breakdown:
+  Your analysis should be empathetic and encouraging.
+
+  Here is the user's financial data for the month:
+  - Monthly Income: ৳{{{monthlyIncome}}}
+  - Total Expenses: ৳{{{totalExpenses}}}
+  - Expense Breakdown:
   {{#each expenseBreakdown}}
-  - {{key}}: BDT {{value}}
+    - {{key}}: ৳{{value}}
   {{/each}}
-  Loan Given: BDT {{{loanGiven}}}
-  Loan Taken: BDT {{{loanTaken}}}
+  - Loan Given: ৳{{{loanGiven}}}
+  - Loan Taken: ৳{{{loanTaken}}}
 
-  Provide a summary of their financial situation, key insights into their spending habits, and personalized suggestions for improvement.  Format the output as a JSON object.
+  Based on this data, provide the following in a JSON object, with all text in Bengali:
+  1.  A "summary" of the user's financial situation for the month.
+  2.  A list of "insights" (অন্তর্দৃষ্টি) into their spending habits.
+  3.  A list of actionable "suggestions" (পরামর্শ) for how they can improve their financial health.
+
+  Your entire response must be in Bengali. Format the output as a JSON object.
   `,
 });
 
