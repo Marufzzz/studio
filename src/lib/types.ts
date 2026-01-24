@@ -12,6 +12,7 @@ export interface Loan {
   amount: number;
   type: 'given' | 'taken';
   date: string;
+  description: string;
 }
 
 export interface AnalysisResult {

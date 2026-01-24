@@ -53,42 +53,52 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     if (!text) return;
     setIsProcessing(true);
     try {
-      const amountMatch = text.match(/\d+(\.\d+)?/);
-      if (!amountMatch) {
-        toast({
-          variant: "destructive",
-          title: "Invalid Input",
-          description: "Could not find an amount in the expense description.",
-        });
-        return;
-      }
-      const amount = parseFloat(amountMatch[0]);
-      const description = text.replace(amountMatch[0], '').replace(/টাকা/g, '').trim();
-
       const result = await getExpenseCategory({ expenseText: text });
       
-      const newEntry = {
-        id: new Date().toISOString(),
-        description: description || result.category,
-        amount,
-        date: new Date().toLocaleDateString('en-CA'),
-      };
+      if (!result || !result.transactions || result.transactions.length === 0) {
+          toast({
+              variant: "destructive",
+              title: "Could not parse expense",
+              description: "Please try rephrasing your input.",
+          });
+          return;
+      }
 
-      if (result.category === 'given loan' || result.category === 'taken loan') {
-        setLoans([...loans, { 
-            id: newEntry.id, 
-            name: result.personName || 'Unknown', 
-            amount: newEntry.amount, 
-            type: result.category === 'given loan' ? 'given' : 'taken',
-            date: newEntry.date
-        }]);
-      } else {
-        setExpenses([...expenses, { ...newEntry, category: result.category || 'other' }]);
+      const newExpenses: Expense[] = [];
+      const newLoans: Loan[] = [];
+
+      for (const transaction of result.transactions) {
+        const newEntry = {
+          id: `${new Date().toISOString()}-${Math.random()}`,
+          description: transaction.description,
+          amount: transaction.amount,
+          date: new Date().toLocaleDateString('en-CA'),
+        };
+
+        if (transaction.category === 'given loan' || transaction.category === 'taken loan') {
+          newLoans.push({ 
+              id: newEntry.id,
+              description: newEntry.description,
+              amount: newEntry.amount,
+              date: newEntry.date,
+              name: transaction.personName || 'Unknown', 
+              type: transaction.category === 'given loan' ? 'given' : 'taken',
+          });
+        } else {
+          newExpenses.push({ ...newEntry, category: transaction.category || 'other' });
+        }
+      }
+
+      if (newExpenses.length > 0) {
+        setExpenses(prev => [...prev, ...newExpenses]);
+      }
+      if (newLoans.length > 0) {
+        setLoans(prev => [...prev, ...newLoans]);
       }
 
       toast({
-        title: "Transaction Added",
-        description: `"${text}" was categorized as ${result.category}.`,
+        title: "Transactions Added",
+        description: `${result.transactions.length} new transaction(s) have been added.`,
       });
       setIsOpen(false);
     } catch (error) {
@@ -96,7 +106,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
       toast({
         variant: "destructive",
         title: "AI Error",
-        description: "Could not categorize the transaction. Please try again.",
+        description: "Could not categorize the transaction(s). Please try again.",
       });
     } finally {
       setIsProcessing(false);
