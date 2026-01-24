@@ -132,27 +132,34 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     if (!recognitionRef.current) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'bn-BD';
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         
         recognition.onstart = () => {
           setIsListening(true);
-          toast({ title: 'Listening...', description: 'Please speak your transaction in Bengali.' });
+          toast({ title: 'Listening...', description: 'Please speak your transaction(s). Click the mic again to stop.' });
         };
         
         recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
+          let transcript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
           form.setValue('expenseText', transcript);
-          handleAddTransaction(transcript);
         };
         
         recognition.onerror = (event) => {
           console.error('Speech recognition error', event.error);
           toast({ variant: 'destructive', title: 'Voice Error', description: `Error: ${event.error}` });
+          setIsListening(false);
         };
         
         recognition.onend = () => {
           setIsListening(false);
+          const finalTranscript = form.getValues('expenseText');
+          if (finalTranscript) {
+              handleAddTransaction(finalTranscript);
+          }
         };
 
         recognitionRef.current = recognition;
@@ -161,6 +168,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
+      form.reset();
       recognitionRef.current.start();
     }
   };
@@ -205,7 +213,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
               render={({ field }) => (
                 <FormItem className="flex-1">
                   <FormControl>
-                    <Input placeholder='e.g., "রাতের খাবার ৩০০ টাকা"' {...field} disabled={isProcessing} />
+                    <Input placeholder='e.g., "রাতের খাবার ৩০০ টাকা আর বাসা ভাড়া ৫০০০ টাকা"' {...field} disabled={isProcessing} />
                   </FormControl>
                   <FormMessage className="mt-2" />
                 </FormItem>
