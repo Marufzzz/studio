@@ -49,16 +49,21 @@ Your task is to identify each individual transaction from the user's input, extr
 
 You must categorize each expense into one of the following categories: food, beverage, snacks, transportation, rent, utilities, shopping, entertainment, health, education, gift, given loan, taken loan, other.
 
+STRICT CATEGORIZATION RULES:
+- 'চা' (Tea) or any drink -> beverage
+- 'চানাচুর' (Chanachur), 'বিস্কুট' (Biscuits) -> snacks
+- 'সিগারেট' (Cigarette) -> other
+- 'বাসা ভাড়া' (House Rent) -> rent
+- 'রিকশা' (Rickshaw), 'বাস' (Bus) -> transportation
+
 If an expense is a loan (given or taken), you MUST extract the name of the person involved and put it in the 'personName' field. For example, "রহিমকে ৫০০ টাকা ধার দিলাম" (Gave 500 taka loan to Rahim) should result in personName: "রহিম". If no person is mentioned for a loan, use "Unknown".
 
 The user might use connectors like 'আর', 'এবং', or just list them. For example: "ভাত ৬০ টাকা আর রিকশা ভাড়া ৩০ টাকা". This should be parsed into two separate transactions.
 A single transaction like " রাতের খাবার ৩০০ টাকা" should be parsed as one transaction.
 
-Another example with multiple items: "নাস্তা ২০ টাকা, সিগারেট ৩০". This should also be parsed as two transactions.
-
 Expense Text (Bengali): {{{expenseText}}}
 
-Consider common expenses in Bangladesh when categorizing. For example: 'চা' -> beverage, 'সিগারেট' -> other, 'চানাচুর' -> snacks.
+Consider common expenses in Bangladesh when categorizing. 
 Respond with a JSON object containing an array of transaction objects. Each object must have a 'description', 'amount', 'category', and optionally a 'personName'. The category should be in English.
 If the input string is empty or does not seem to contain any valid expense, return an empty array for transactions.
 `,

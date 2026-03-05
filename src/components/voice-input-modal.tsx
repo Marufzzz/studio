@@ -8,16 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Loader2, Mic } from 'lucide-react';
+import { Loader2, Mic, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { getExpenseCategory } from '@/lib/actions/expense.actions';
 import type { Expense, Loan } from '@/lib/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
-
 const formSchema = z.object({
-  expenseText: z.string().min(1, { message: 'Please enter an expense.' }),
+  expenseText: z.string().min(1, { message: 'Please enter or speak an expense.' }),
 });
 
 const getCurrentDataKey = () => {
@@ -36,7 +35,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
   const { toast } = useToast();
   const [isListening, setIsListening] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
-  const recognitionRef = React.useRef<SpeechRecognition | null>(null);
+  const recognitionRef = React.useRef<any>(null);
   
   const dataKey = React.useMemo(getCurrentDataKey, []);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>(`${dataKey}-expenses`, []);
@@ -69,7 +68,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
 
       for (const transaction of result.transactions) {
         const newEntry = {
-          id: `${new Date().toISOString()}-${Math.random()}`,
+          id: `${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`,
           description: transaction.description,
           amount: transaction.amount,
           date: new Date().toLocaleDateString('en-CA'),
@@ -98,14 +97,14 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
 
       toast({
         title: "Transactions Added",
-        description: `${result.transactions.length} new transaction(s) have been added.`,
+        description: `${result.transactions.length} new transaction(s) categorized and saved.`,
       });
       setIsOpen(false);
     } catch (error) {
       console.error('Error categorizing expense:', error);
       toast({
         variant: "destructive",
-        title: "AI Error",
+        title: "AI Analysis Error",
         description: "Could not categorize the transaction(s). Please try again.",
       });
     } finally {
@@ -119,12 +118,12 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
   }
 
   const handleVoiceInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast({
         variant: 'destructive',
         title: 'Browser Not Supported',
-        description: 'Your browser does not support voice recognition.',
+        description: 'Your browser does not support speech recognition.',
       });
       return;
     }
@@ -137,27 +136,29 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
         
         recognition.onstart = () => {
           setIsListening(true);
-          toast({ title: 'Listening...', description: 'Please speak your transaction(s). Click the mic again to stop.' });
+          toast({ title: 'Mic On', description: 'Transcribing speech to text... Tap mic again to stop.' });
         };
         
-        recognition.onresult = (event) => {
-          let transcript = '';
+        recognition.onresult = (event: any) => {
+          let currentTranscript = '';
           for (let i = 0; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
+            currentTranscript += event.results[i][0].transcript;
           }
-          form.setValue('expenseText', transcript);
+          form.setValue('expenseText', currentTranscript);
         };
         
-        recognition.onerror = (event) => {
+        recognition.onerror = (event: any) => {
           console.error('Speech recognition error', event.error);
-          toast({ variant: 'destructive', title: 'Voice Error', description: `Error: ${event.error}` });
+          toast({ variant: 'destructive', title: 'Speech-to-Text Error', description: `Error: ${event.error}` });
           setIsListening(false);
         };
         
         recognition.onend = () => {
           setIsListening(false);
+          // When mic stops, we have the final text in the form.
+          // AI processing is triggered by the manual stop.
           const finalTranscript = form.getValues('expenseText');
-          if (finalTranscript) {
+          if (finalTranscript && !isProcessing) {
               handleAddTransaction(finalTranscript);
           }
         };
@@ -168,28 +169,33 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
-      form.reset();
+      form.setValue('expenseText', '');
       recognitionRef.current.start();
     }
   };
   
   React.useEffect(() => {
-    // Stop listening if modal is closed
-    if (!isOpen && recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-    }
-  }, [isOpen, isListening]);
+    return () => {
+      if (recognitionRef.current && isListening) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [isListening]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogTitle>Add Transaction</DialogTitle>
           <DialogDescription>
-            Use voice input in Bengali or type your transaction below and press Enter.
+            {isListening 
+              ? "Speech-to-Text Active: Speak now in Bengali..." 
+              : isProcessing 
+                ? "AI Analyzing Text..." 
+                : "Tap the mic to start transcribing your expense."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex justify-center my-4">
+        <div className="flex flex-col items-center justify-center my-8 gap-4">
             <Button
                 type="button"
                 size="icon"
@@ -197,31 +203,50 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
                 onClick={handleVoiceInput}
                 disabled={isProcessing}
                 className={cn(
-                  "w-24 h-24 rounded-full border-4", 
-                  isListening && !isProcessing && "text-destructive border-destructive animate-pulse"
+                  "w-32 h-32 rounded-full border-4 transition-all duration-300", 
+                  isListening && "text-destructive border-destructive scale-110 shadow-lg animate-pulse bg-destructive/5",
+                  isProcessing && "opacity-50"
                 )}
             >
-              {isProcessing ? <Loader2 className="h-10 w-10 animate-spin" /> : <Mic className="h-10 w-10" />}
-              <span className="sr-only">Use Voice</span>
+              {isProcessing ? (
+                <Loader2 className="h-14 w-14 animate-spin" />
+              ) : isListening ? (
+                <CheckCircle2 className="h-14 w-14" />
+              ) : (
+                <Mic className="h-14 w-14" />
+              )}
+              <span className="sr-only">Toggle Voice Input</span>
             </Button>
+            {isListening && (
+              <span className="text-xs font-medium text-destructive animate-pulse">STOP MIC TO PROCESS</span>
+            )}
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="expenseText"
               render={({ field }) => (
-                <FormItem className="flex-1">
+                <FormItem>
                   <FormControl>
-                    <Input placeholder='e.g., "রাতের খাবার ৩০০ টাকা আর বাসা ভাড়া ৫০০০ টাকা"' {...field} disabled={isProcessing} />
+                    <div className="relative">
+                      <Input 
+                        placeholder='e.g., "চা ২০ টাকা আর চানাচুর ৩০ টাকা"' 
+                        {...field} 
+                        disabled={isProcessing || isListening}
+                        className="pr-10 h-12 text-lg"
+                      />
+                    </div>
                   </FormControl>
-                  <FormMessage className="mt-2" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isProcessing}>
-                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
-            </Button>
+            {!isListening && !isProcessing && form.getValues('expenseText') && (
+              <Button type="submit" className="w-full h-12">
+                Analyze & Save
+              </Button>
+            )}
           </form>
         </Form>
       </DialogContent>
