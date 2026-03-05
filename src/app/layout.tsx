@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 
 export const metadata: Metadata = {
   title: 'techa',
@@ -44,6 +45,7 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", "min-h-screen bg-background font-sans")}>
         <div className="flex flex-col min-h-screen">
+          <PwaInstallPrompt />
           <main className="flex-1 pb-24">{children}</main>
           <BottomNav />
         </div>
