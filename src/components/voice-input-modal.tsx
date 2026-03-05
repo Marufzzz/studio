@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Loader2, Mic, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mic, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { getExpenseCategory } from '@/lib/actions/expense.actions';
@@ -49,7 +50,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
   });
 
   const handleAddTransaction = async (text: string) => {
-    if (!text) return;
+    if (!text || text.trim().length === 0) return;
     setIsProcessing(true);
     try {
       const result = await getExpenseCategory({ expenseText: text });
@@ -58,7 +59,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
           toast({
               variant: "destructive",
               title: "Could not parse expense",
-              description: "Please try rephrasing your input.",
+              description: "Please try rephrasing your input or speaking more clearly.",
           });
           return;
       }
@@ -97,7 +98,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
 
       toast({
         title: "Transactions Added",
-        description: `${result.transactions.length} new transaction(s) categorized and saved.`,
+        description: `${result.transactions.length} transaction(s) categorized and saved.`,
       });
       setIsOpen(false);
     } catch (error) {
@@ -105,7 +106,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
       toast({
         variant: "destructive",
         title: "AI Analysis Error",
-        description: "Could not categorize the transaction(s). Please try again.",
+        description: "The AI service timed out or failed. Please try again with shorter text.",
       });
     } finally {
       setIsProcessing(false);
@@ -118,81 +119,93 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
   }
 
   const handleVoiceInput = () => {
+    if (typeof window === 'undefined') return;
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast({
         variant: 'destructive',
         title: 'Browser Not Supported',
-        description: 'Your browser does not support speech recognition.',
+        description: 'Speech recognition is not supported in this browser. Try Chrome or Safari.',
       });
       return;
     }
 
-    if (!recognitionRef.current) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'bn-BD';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        
-        recognition.onstart = () => {
-          setIsListening(true);
-          toast({ title: 'Mic On', description: 'Transcribing speech to text... Tap mic again to stop.' });
-        };
-        
-        recognition.onresult = (event: any) => {
-          let currentTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-          }
-          form.setValue('expenseText', currentTranscript);
-        };
-        
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error', event.error);
-          toast({ variant: 'destructive', title: 'Speech-to-Text Error', description: `Error: ${event.error}` });
-          setIsListening(false);
-        };
-        
-        recognition.onend = () => {
-          setIsListening(false);
-          // When mic stops, we have the final text in the form.
-          // AI processing is triggered by the manual stop.
-          const finalTranscript = form.getValues('expenseText');
-          if (finalTranscript && !isProcessing) {
-              handleAddTransaction(finalTranscript);
-          }
-        };
-
-        recognitionRef.current = recognition;
-    }
-    
     if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      form.setValue('expenseText', '');
-      recognitionRef.current.start();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      return;
     }
+
+    // Initialize Recognition
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'bn-BD';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    
+    recognition.onstart = () => {
+      setIsListening(true);
+      form.setValue('expenseText', '');
+      toast({ title: 'Microphone Active', description: 'Speak in Bengali... Tap button again when finished.' });
+    };
+    
+    recognition.onresult = (event: any) => {
+      let currentTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        currentTranscript += event.results[i][0].transcript;
+      }
+      if (currentTranscript) {
+        form.setValue('expenseText', currentTranscript);
+      }
+    };
+    
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error', event.error);
+      setIsListening(false);
+      
+      let message = "Speech-to-text failed.";
+      if (event.error === 'not-allowed') message = "Microphone access denied. Please check site permissions.";
+      if (event.error === 'network') message = "Network error. Check your internet connection.";
+      
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+      const text = form.getValues('expenseText');
+      if (text && !isProcessing) {
+        handleAddTransaction(text);
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   };
   
+  // Cleanup on unmount
   React.useEffect(() => {
     return () => {
-      if (recognitionRef.current && isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
         recognitionRef.current.stop();
       }
     };
-  }, [isListening]);
+  }, []);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!isProcessing) setIsOpen(open);
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add Transaction</DialogTitle>
           <DialogDescription>
             {isListening 
-              ? "Speech-to-Text Active: Speak now in Bengali..." 
+              ? "Listening... Speak clearly in Bengali." 
               : isProcessing 
-                ? "AI Analyzing Text..." 
-                : "Tap the mic to start transcribing your expense."}
+                ? "AI is categorizing your expenses..." 
+                : "Tap the microphone to start."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center my-8 gap-4">
@@ -204,8 +217,8 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
                 disabled={isProcessing}
                 className={cn(
                   "w-32 h-32 rounded-full border-4 transition-all duration-300", 
-                  isListening && "text-destructive border-destructive scale-110 shadow-lg animate-pulse bg-destructive/5",
-                  isProcessing && "opacity-50"
+                  isListening && "text-destructive border-destructive scale-105 shadow-lg bg-destructive/5",
+                  isProcessing && "opacity-50 cursor-not-allowed"
                 )}
             >
               {isProcessing ? (
@@ -218,7 +231,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
               <span className="sr-only">Toggle Voice Input</span>
             </Button>
             {isListening && (
-              <span className="text-xs font-medium text-destructive animate-pulse">STOP MIC TO PROCESS</span>
+              <span className="text-xs font-semibold text-destructive animate-pulse uppercase tracking-wider">Tap to Stop & Process</span>
             )}
         </div>
         <Form {...form}>
@@ -231,7 +244,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
                   <FormControl>
                     <div className="relative">
                       <Input 
-                        placeholder='e.g., "চা ২০ টাকা আর চানাচুর ৩০ টাকা"' 
+                        placeholder='e.g., "চা ২০ টাকা আর রিকশা ৩০ টাকা"' 
                         {...field} 
                         disabled={isProcessing || isListening}
                         className="pr-10 h-12 text-lg"
@@ -243,12 +256,18 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
               )}
             />
             {!isListening && !isProcessing && form.getValues('expenseText') && (
-              <Button type="submit" className="w-full h-12">
+              <Button type="submit" className="w-full h-12 font-bold">
                 Analyze & Save
               </Button>
             )}
           </form>
         </Form>
+        {isProcessing && (
+           <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
+              <AlertCircle className="h-4 w-4" />
+              <span>This might take a few seconds...</span>
+           </div>
+        )}
       </DialogContent>
     </Dialog>
   );

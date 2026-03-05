@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'Track your finances with ease.',
 };
 
+export const maxDuration = 60;
+
 export default function RootLayout({
   children,
 }: Readonly<{
