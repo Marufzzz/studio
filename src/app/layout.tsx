@@ -5,13 +5,13 @@ import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/layout/bottom-nav';
 
 export const metadata: Metadata = {
-  title: 'Trackit Finance',
-  description: 'Track your finances with ease.',
+  title: 'techa',
+  description: 'Personal finance tracking simplified.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Trackit',
+    title: 'techa',
   },
   formatDetection: {
     telephone: false,

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -43,8 +44,15 @@ export function IncomeModal({ isOpen, onSave }: IncomeModalProps) {
       <DialogContent className="sm:max-w-[425px]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <DialogHeader>
-              <DialogTitle>Welcome to Trackit Finance</DialogTitle>
+            <DialogHeader className="flex flex-col items-center text-center">
+              <Image 
+                src="/logo.png" 
+                alt="techa logo" 
+                width={64} 
+                height={64} 
+                className="mb-4 rounded-full"
+              />
+              <DialogTitle>Welcome to techa</DialogTitle>
               <DialogDescription>
                 To get started, please enter your total monthly income in BDT.
               </DialogDescription>
@@ -65,7 +73,7 @@ export function IncomeModal({ isOpen, onSave }: IncomeModalProps) {
               />
             </div>
             <DialogFooter>
-              <Button type="submit">Save and Continue</Button>
+              <Button type="submit" className="w-full">Save and Continue</Button>
             </DialogFooter>
           </form>
         </Form>

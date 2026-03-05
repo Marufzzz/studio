@@ -5,8 +5,8 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { Expense } from '@/lib/types';
 import { SummaryCards } from '@/components/dashboard/summary-cards';
 import { IncomeModal } from '@/components/dashboard/income-modal';
-import { PiggyBank } from 'lucide-react';
 import { CategorizedExpenses } from '@/components/dashboard/categorized-expenses';
+import Image from 'next/image';
 
 const getCurrentDataKey = () => {
   const now = new Date();
@@ -29,15 +29,21 @@ export default function HomePage() {
   const savings = monthlyIncome ? monthlyIncome - totalExpenses : null;
 
   if (!isMounted) {
-    return null; // or a loading skeleton
+    return null;
   }
 
   return (
     <>
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
           <div className="flex items-center gap-2">
-              <PiggyBank className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold font-headline">Dashboard</h1>
+              <Image 
+                src="/logo.png" 
+                alt="techa logo" 
+                width={32} 
+                height={32} 
+                className="rounded-full"
+              />
+              <h1 className="text-xl font-bold font-headline">techa Dashboard</h1>
           </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
