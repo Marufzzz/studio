@@ -37,6 +37,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
   const [isListening, setIsListening] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const recognitionRef = React.useRef<any>(null);
+  const shouldProcessRef = React.useRef(false);
   
   const dataKey = React.useMemo(getCurrentDataKey, []);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>(`${dataKey}-expenses`, []);
@@ -133,6 +134,7 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
 
     if (isListening) {
       if (recognitionRef.current) {
+        shouldProcessRef.current = true;
         recognitionRef.current.stop();
       }
       return;
@@ -146,8 +148,8 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     
     recognition.onstart = () => {
       setIsListening(true);
-      form.setValue('expenseText', '');
-      toast({ title: 'Microphone Active', description: 'Speak in Bengali... Tap button again when finished.' });
+      shouldProcessRef.current = false;
+      toast({ title: 'Microphone Active', description: 'Speak in Bengali... Tap button again to process.' });
     };
     
     recognition.onresult = (event: any) => {
@@ -174,7 +176,8 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     recognition.onend = () => {
       setIsListening(false);
       const text = form.getValues('expenseText');
-      if (text && !isProcessing) {
+      // Only auto-trigger AI if the user explicitly clicked the stop button (shouldProcessRef is true)
+      if (shouldProcessRef.current && text && !isProcessing) {
         handleAddTransaction(text);
       }
     };
@@ -183,7 +186,6 @@ export function VoiceInputModal({ isOpen, setIsOpen }: VoiceInputModalProps) {
     recognition.start();
   };
   
-  // Cleanup on unmount
   React.useEffect(() => {
     return () => {
       if (recognitionRef.current) {
